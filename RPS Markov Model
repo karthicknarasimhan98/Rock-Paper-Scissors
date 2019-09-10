@@ -140,6 +140,7 @@ result <- function(computer,player){
   return(x)  
 }  
 
+
 #######matrix creation#######
 row_name<-c("RR","RP","RS","PR","PP","PS","SR","SP","SS")
 move<-c("R","P","S")
