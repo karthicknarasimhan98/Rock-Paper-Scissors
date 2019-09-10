@@ -1,0 +1,303 @@
+server <- function(input, output, session) {
+  useShinyjs()
+  
+  #keep this tab hidden
+  hide(selector = "#tab1 li a[data-value=Finish]")
+  
+  #reactive value for in-game data
+  values <- reactiveValues(outcome = NULL, outcomes = NULL, move = NULL, computer = NULL)
+  
+  #action buttons
+  observeEvent(input$in_rock, values$move  <- "rock", priority = 2)
+  observeEvent(input$in_scissors, values$move  <- "scissors", priority = 2)
+  observeEvent(input$in_paper, values$move  <- "paper", priority = 2)
+  
+  #reactive when any of the three choices are clicked
+  clicked <- reactive(c(input$in_rock, input$in_scissors, input$in_paper))
+  
+  #when click triggered, create and append move/outcome
+  observeEvent(clicked(), {
+    values$moves <- c(values$moves, values$move)
+    values$computer <- if(any(clicked() > 0 )) random_move()
+    values$computers <- c(values$computers, values$computer)
+    values$outcome <- oc(which(choices == values$move) - which(choices == values$computer))
+    values$outcomes <- c(values$outcomes, values$outcome)
+  }, priority = 1)
+  
+  #player history
+  history <- eventReactive(clicked(), 
+                           data.frame(
+                             round = rev(seq_len(length(values$moves))),
+                             player = rev(values$moves), 
+                             computer = rev(values$computers), 
+                             outcome = rev(values$outcomes)
+                           )
+  )
+  
+  #reactive to round length (should happen after clicked)
+  cur.round <- reactive(length(values$outcomes))
+  #game completion trigger
+  completed <- reactive(as.numeric(sum(values$outcomes == "win") >= 5 | sum(values$outcomes == "lose") >= 5))
+  
+  #save results when game completed
+  observe(if(completed() == 1) {
+    hide(selector = "#tab1 li a[data-value=Play]")
+    show(selector = "#tab1 li a[data-value=Finish]")
+    updateTabsetPanel(session, "tab1", selected = "Finish")
+  }, priority = 1)
+  #for UI
+  #image functions
+  blankImg <- function(h = 1, w = 1) {list(src = "E:/Labs stuffs/App/www/images/blank.jpg", contentType = "image/jpeg", height = h, width = w)}
+  
+  rockImg <- function(h = 250, w = 250) {list(src = "E:/Labs stuffs/App/www/images/r.jpg", contentType = "image/jpeg", height = h, width = w)}
+  
+  scissorsImg <- function(h = 250, w = 250) {list(src = "E:/Labs stuffs/App/www/images/s.jpg", contentType = "image/jpeg", height = h, width = w)}
+  
+  paperImg <- function(h = 250, w = 250) {list(src = "E:/Labs stuffs/App/www/images/p.jpg", contentType = "image/jpeg", height = h, width = w)}
+  
+ #markov image functions
+  rockimg <- function(h=60,w=50) {list(src = "E:/Labs stuffs/App/www/images/r.jpg", contentType = "image/jpeg", height = h, width = w)}
+  
+  paperimg <- function(h=60,w=50) {list(src = "E:/Labs stuffs/App/www/images/p.jpg", contentType = "image/jpeg", height = h, width = w)}
+  
+  scissorimg <- function(h=60,w=50) {list(src = "E:/Labs stuffs/App/www/images/s.jpg", contentType = "image/jpeg", height = h, width = w)}
+  
+  #player image, reactively changes with outcome
+  playerImgOut <- reactive(
+    if(is.null(values$outcome)){
+      return(list(src = "E:/Labs stuffs/App/www/images/n.jpg", contentType = "image/jpeg",
+                  height = 230, width = 200))
+    } else
+      if(values$outcome == "tie"){      
+        return(list(src = "E:/Labs stuffs/App/www/images/T.jpg", contentType = "image/jpeg",
+                    height = 230, width = 200))
+      } else
+        if(values$outcome == "win"){
+          return(list(src = "E:/Labs stuffs/App/www/images/w.jpg", contentType = "image/jpeg",
+                      height = 230, width = 200))
+        } else 
+          if(values$outcome == "lose"){
+            return(list(src = "E:/Labs stuffs/App/www/images/l.jpg", contentType = "image/jpeg",
+                        height = 230, width = 200))
+          }
+  )   
+  
+  #Outputs
+  #tab "Play"
+  
+  output$rockButton <- renderImage(rockImg(),  deleteFile = FALSE)
+  output$scissorsButton <- renderImage(scissorsImg(),  deleteFile = FALSE)
+  output$paperButton <- renderImage(paperImg(),  deleteFile = FALSE)
+  
+  output$playerImage <- renderImage(playerImgOut(),  deleteFile = FALSE)
+  
+  #outputs for markov image
+  
+  output$Rockbutton <- renderImage(rockimg(),deleteFile = FALSE)
+  output$Paperbutton <- renderImage(paperimg(),deleteFile = FALSE)
+  output$Scissorbutton <- renderImage(scissorimg(),deleteFile = FALSE)
+  
+  #Rps image
+  output$rpsimage<-renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/rps.gif", contentType = "image/gif",
+                height = 230, width = 250))
+  }, deleteFile = F)
+  
+  output$rps1image<-renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/rps1.gif", contentType = "image/gif",
+                height = 230, width = 250))
+  }, deleteFile = F)
+  
+  output$rps2image<-renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/rps2.gif", contentType = "image/gif",
+                height = 230, width = 250))
+  }, deleteFile = F)
+  
+  output$aimage<-renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/a.jpg", contentType = "image/jpg",
+                height = 150, width = 150))
+  }, deleteFile = F)
+  
+  output$a1image<-renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/a1.jpg", contentType = "image/jpg",
+                height = 150, width = 150))
+  }, deleteFile = F)
+  
+  
+  #player move, reactively changes with outcome
+  output$playerMove <- renderImage({
+    if(all(clicked() == 0)) blankImg(1, 1) else
+      if(values$move == "rock") rockImg(80, 80) else
+        if(values$move == "scissors") scissorsImg(80, 80) else
+          if(values$move == "paper") paperImg(80, 80)
+  },  deleteFile = FALSE)
+  
+  #computer move, reactively changes with computer
+  output$botMove <- renderImage({
+    if(all(clicked() == 0)) blankImg(1, 1) else
+      if(values$computer == "rock") rockImg(80, 80) else
+        if(values$computer == "scissors") scissorsImg(80, 80) else
+          if(values$computer == "paper") paperImg(80, 80)
+  },  deleteFile = FALSE)
+  
+  # static bot image
+  output$botImage <- renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/h.jpg", contentType = "image/jpg",
+                height = 230, width = 200))
+  }, deleteFile = F)
+  
+  #app developers image
+  output$akhilimage <- renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/akhil.jpg", contentType = "image/jpg",
+                height = 150, width = 150))
+  }, deleteFile = F)
+  
+  output$karthickimage <- renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/karthick.jpg", contentType = "image/jpg",
+                height = 160, width = 150))
+  }, deleteFile = F)
+  
+  output$manviimage <- renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/manvi.jpg", contentType = "image/jpg",
+                height = 160, width = 150))
+  }, deleteFile = F)
+  
+  output$kulwanthimage <- renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/kulwanth.jpg", contentType = "image/jpg",
+                height = 150, width = 150))
+  }, deleteFile = F)
+  
+  output$faizimage <- renderImage({
+    return(list(src = "E:/Labs stuffs/App/www/images/faiz.jpg", contentType = "image/jpg",
+                height = 150, width = 150))
+  }, deleteFile = F)
+  
+  
+  output$computer <- renderText(values$computer)
+  output$result <- renderText(if(!is.null(values$outcome)) paste("You", ifelse(values$outcome == "tie", "tied", values$outcome)))
+  output$ft <- renderDataTable(performance(), options = list(paging = F, searching = FALSE, autoWidth = T, columnDefs = list(list(width = '60px', targets = "_all"))), rownames = F)
+  
+  
+  #tab "Finish"  
+  #refresh game when reach end and button clicked
+  observeEvent(input$refreshButton, js$reset())
+  output$playerImageFinish <- renderImage(playerImgOut(),  deleteFile = FALSE)
+  output$resultFinish <- renderText(if(!is.null(values$outcome)) paste("You", ifelse(values$outcome == "tie", "tied", values$outcome)))
+  output$ftFinish <- renderDataTable(performance(), options = list(paging = F, searching = FALSE, autoWidth = T, columnDefs = list(list(width = '70px', targets = "_all"))), rownames = F)
+  
+  
+  #tab "Data"
+  output$resultTab = renderDataTable(datatable(resultTab(), filter = 'top', options = list(pageLength = 10, searching = FALSE, autoWidth = T, columnDefs = list(list(width = '70px', targets = "_all"))), rownames = F))
+  
+  output$hist <- renderDataTable(history(), options = list(pageLength = 20, searching = F), rownames = F)
+  
+  inputkey <- reactiveValues(x="NIL")
+  
+  observeEvent(input$r,{inputkey$x <- "R"},priority = 3)
+  observeEvent(input$p,{inputkey$x <- "P"},priority = 3)
+  observeEvent(input$s,{inputkey$x <- "S"},priority = 3)
+  # 
+  # output$player_move <- renderText(paste0("Your move:  ",inputkey$x))
+  #########################
+  
+  indx <- reactive({
+    sum(input$r+input$s+input$p)
+  })
+  
+  hist1 <- reactiveValues(h="Player's History:  ")
+  
+  observeEvent(input$r,{hist1$h<-c(hist1$h,inputkey$x)})
+  observeEvent(input$p,{hist1$h<-c(hist1$h,inputkey$x)})
+  observeEvent(input$s,{hist1$h <-c(hist1$h,inputkey$x)})
+  
+  output$prev <- renderText({
+    hist1$h
+  })
+  #########################
+  ############################
+  # markov_matrix <- reactive({
+  #   mmm})
+  row_name<-c("RR","RP","RS","PR","PP","PS","SR","SP","SS")
+  move<-c("Rock","Paper","Scissors")
+  mat <- reactiveValues(z=matrix(c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),9,3,T))
+  observeEvent(input$r,{
+    dimnames(mat$z) <- list(row_name,move)
+    mat$z <- mupdate(mat$z,hist1$h,indx()+1,inputkey$x)
+  })
+  observeEvent(input$p,{
+    mat$z <- mupdate(mat$z,hist1$h,indx()+1,inputkey$x)
+    dimnames(mat$z) <- list(row_name,move)
+  })
+  observeEvent(input$s,{
+    mat$z <- mupdate(mat$z,hist1$h,indx()+1,inputkey$x)
+    dimnames(mat$z) <- list(row_name,move)
+    
+  })
+  
+  
+  
+  #########################
+  outputkey <- reactiveValues(y="NIL")
+  
+  observeEvent(input$r,{
+    outputkey$y <- rps(mat$z,hist1$h,indx()+1)
+  })
+  observeEvent(input$p,{
+    outputkey$y <- rps(mat$z,hist1$h,indx()+1)
+  })
+  observeEvent(input$s,{
+    outputkey$y <- rps(mat$z,hist1$h,indx()+1)
+  })
+  
+  
+  # output$comp<- renderText({
+  #   paste0("Computer's Move:   ",outputkey$y)
+  #   
+  # })
+  
+  ############
+  rslt <- reactive({result(outputkey$y,inputkey$x)})
+  # output$res <- renderText({
+  #   rslt()
+  # })
+  #########################
+  # output$matrix <- renderDataTable(mat$z)##make it reactive
+  ###################################
+  gm <- reactiveValues(l="It's a tie!")
+  
+  observeEvent(input$r,{gm$l<-c(rslt(),gm$l)})
+  observeEvent(input$p,{gm$l<-c(rslt(),gm$l)})
+  observeEvent(input$s,{gm$l <-c(rslt(),gm$l)})
+  
+  hjk <- reactive({
+    data.frame(gm$l)
+    
+  })
+  
+  # output$plot <- renderPlot({
+  #  ggplot(hjk(),aes(x=factor(gm$l),fill=factor(gm$l)))+geom_bar(aes(y=stat(count*100/sum(count))))+labs(xlab("Result Statistics"),ylab("Measures"))
+  # })
+  #########################OUTPUTS#################################
+  output$player_move <- renderText(paste0("Your move:  ",inputkey$x))
+  
+  output$plot <- renderPlot({
+    ggplot(hjk(),aes(x=factor(gm$l),fill=factor(gm$l)))+geom_bar(aes(y=stat(count*100/sum(count))))+xlab("RESULT STATISTICS")+ylab("PECENTAGE")+labs(fill="RESULTS")+theme_dark()
+  })
+  
+  output$matrix <- renderDataTable(mat$z)
+  
+  
+  output$res <- renderText({
+    rslt()
+  })
+  
+  output$comp<- renderText({
+    paste0("Computer's Move:   ",outputkey$y)
+    
+  })
+  
+  
+}
+
+shinyApp(ui=ui, server=server)
+
