@@ -1,0 +1,149 @@
+#declare rps game elements  
+choices <- c("rock", "paper", "scissors")
+results <- c("win","lose","tie")
+#choices
+human_priors <- c(.35, .3, .35)
+
+#computer should play hands based on human move priors
+comp_priors <- c(human_priors[3], human_priors[1:2])
+
+#random move generator from prior
+random_move <- function() sample(choices, 1, replace = T, prob = comp_priors) 
+
+#outcome for player vs computer moves
+oc <- function(x) {
+  if(length(x) > 0){
+    if(x == 0) "tie" else
+      if(x %in% c(1, -2)) "win" else
+        if(x %in% c(-1, 2)) "lose"
+  }
+}
+
+#reactive values for results
+seq1 <- merge(choices, results, by = NULL); names(seq1) = c("move","outcome")  
+seq2 <- merge(seq1, seq1, by = NULL, suffixes = c(".1",".2")) 
+seq3 <- merge(seq2, seq1, by = NULL); names(seq3)[5:6] = c("move.3", "outcome.3")
+
+rps <- function(matrix,history,j){
+  
+  if (length(history)>3){
+    
+    if(history[j-2]=="R" & history[j-1]=="R"){
+      k=1
+    } else{
+      if(history[j-2]=="R" & history[j-1]=="P"){
+        k=2
+      } else {
+        if(history[j-2]=="R" & history[j-1]=="S"){
+          k=3
+        } else {
+          if(history[j-2]=="P" & history[j-1]=="R"){
+            k=4
+          } else {
+            if(history[j-2]=="P" & history[j-1]=="P"){
+              k=5
+            } else {
+              if(history[j-2]=="P" & history[j-1]=="S"){
+                k=6
+              } else {
+                if(history[j-2]=="S" & history[j-1]=="R"){
+                  k=7
+                } else {
+                  if(history[j-2]=="S" & history[j-1]=="P"){
+                    k=8
+                  } else {
+                    if(history[j-2]=="S" & history[j-1]=="S"){
+                      k=9
+                    } else {
+                      k=1
+                    }
+                  }
+                  
+                }
+                
+              }
+              
+            }
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+  } else{
+    k=1
+  }  
+  move<-c("R","P","S")
+  defeat<-c("P","S","R")
+  m<-which(matrix[k,]==max(matrix[k,]))
+  if (length(m)==1){
+    print(defeat[m])
+  } else {
+    def<-defeat[m]
+    print(sample(def,1))
+  }
+  
+}  
+##################matrix update####################
+mupdate <- function(matrix,history,j,player){
+  if (length(history)>3){
+    
+    if(history[j-2]=="R" & history[j-1]=="R"){
+      k=1
+    } 
+    if(history[j-2]=="R" & history[j-1]=="P"){
+      k=2
+    } 
+    if(history[j-2]=="R" & history[j-1]=="S"){
+      k=3
+    } 
+    if(history[j-2]=="P" & history[j-1]=="R"){
+      k=4
+    } 
+    if(history[j-2]=="P" & history[j-1]=="P"){
+      k=5
+    } 
+    if(history[j-2]=="P" & history[j-1]=="S"){
+      k=6
+    } 
+    if(history[j-2]=="S" & history[j-1]=="R"){
+      k=7
+    } 
+    if(history[j-2]=="S" & history[j-1]=="P"){
+      k=8}
+    
+    if(history[j-2]=="S" & history[j-1]=="S"){
+      k=9}
+  } else{
+    k=0}
+  
+  play_code <- ifelse(player=="R",yes = 1,no=ifelse(player=="P",yes=2,no=ifelse(player=="S",yes=3,no="NA")))
+  matrix[k,play_code] <- matrix[k,play_code]+1
+  return(matrix)
+}
+#######################
+result <- function(computer,player){
+  if (computer==player){
+    x <- "It's a tie!"
+  } else {
+    if (computer=="R"& player=="S"|computer=="S"& player=="P"|computer=="P"& player=="R") {
+      x <- "Computer wins"
+      
+    } else{
+      if (computer=="R"& player=="P"|computer=="P"& player=="S"|computer=="S"& player=="R"){
+        x <- "Player wins"
+      }
+    }
+  }
+  return(x)  
+}  
+
+#######matrix creation#######
+row_name<-c("RR","RP","RS","PR","PP","PS","SR","SP","SS")
+move<-c("R","P","S")
+defeat<-c("P","S","R")
+mm <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),9,3,T,dimnames = list(row_name,move))
+##h <- c()
+mmm <- data.frame(mm)
