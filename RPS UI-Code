@@ -5,7 +5,6 @@ library("DT")
 library("V8")
 library("ggplot2")
 
-
 jsResetCode <- "shinyjs.reset = function() {history.go(0)}"
 
 ui<-(navbarPage(theme = shinytheme("darkly"), "Rock Paper Scissors",
